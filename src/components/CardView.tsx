@@ -29,7 +29,17 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
   // 스마트 계약에서 CID 조회하고 랜덤 명함 데이터 표시 (데모 버전)
   useEffect(() => {
     if (initialCardData) {
-      // 이미 데이터가 있으면 스킵
+      // 이미 데이터가 있으면 이미지 URL 확인
+      if (initialCardData.cid && !initialCardData.imageUrl) {
+        const imageBase64 = localStorage.getItem(`card_image_${initialCardData.cid}`);
+        if (imageBase64) {
+          setCardData({ ...initialCardData, imageUrl: imageBase64 });
+        } else {
+          setCardData(initialCardData);
+        }
+      } else {
+        setCardData(initialCardData);
+      }
       return;
     }
 
@@ -85,11 +95,23 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
           toast.info(`CID 확인 완료: ${cid.slice(0, 10)}... (데모 모드: 랜덤 명함 정보 표시)`);
         }
 
-        // 4. 랜덤 명함 데이터 생성
+        // 4. 로컬 스토리지에서 이미지 가져오기 (Web2 방식)
+        const imageBase64 = localStorage.getItem(`card_image_${cid}`);
+        if (imageBase64) {
+          console.log('로컬 스토리지에서 이미지 찾음');
+        } else {
+          console.log('로컬 스토리지에 이미지 없음 (다른 브라우저/기기에서 업로드됨)');
+        }
+
+        // 5. 랜덤 명함 데이터 생성
         const randomData = generateRandomCardData();
         const businessCard = BusinessCard.fromIPFSData(randomData);
         businessCard.cid = cid;
         businessCard.address = address;
+        // 이미지 데이터 추가
+        if (imageBase64) {
+          (businessCard as any).imageUrl = imageBase64;
+        }
         
         setCardData(businessCard);
       } catch (err: any) {
@@ -182,6 +204,17 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
             {/* Card */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3366FF] to-[#2952CC] p-8 text-white shadow-xl">
             <div className="space-y-6">
+              {/* Business Card Image */}
+              {cardData?.imageUrl && (
+                <div className="w-full mb-4 rounded-lg overflow-hidden bg-white/10">
+                  <img
+                    src={cardData.imageUrl}
+                    alt="Business Card"
+                    className="w-full h-auto max-h-64 object-contain"
+                  />
+                </div>
+              )}
+              
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>

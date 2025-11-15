@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2, Upload, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
 import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
 import { BusinessCard } from '../models/BusinessCard';
-import { DEMO_CID } from '../constants/demo';
+// Web2 방식: 로컬 스토리지에 이미지 저장
 import { toast } from 'sonner';
 
 interface CreateCardProps {
@@ -22,6 +22,8 @@ interface CreateCardProps {
 export default function CreateCard({ walletAddress, onCardCreated, onBack, scannedData }: CreateCardProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [isTransferable, setIsTransferable] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // 스캔된 데이터가 있으면 BusinessCard 인스턴스 생성
   const initialCard = scannedData 
@@ -32,6 +34,37 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 이미지 파일인지 확인
+      if (!file.type.startsWith('image/')) {
+        toast.error('이미지 파일만 업로드할 수 있습니다.');
+        return;
+      }
+      
+      // 파일 크기 제한 (예: 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('이미지 크기는 10MB 이하여야 합니다.');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // 미리보기 생성
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageRemove = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,11 +89,35 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
         throw new Error(`필수 필드를 입력해주세요: ${missing.join(', ')}`);
       }
 
-      // 3. 데모 버전: 고정된 CID 사용 (IPFS 업로드 생략)
-      const cid = DEMO_CID;
-      toast.info('데모 모드: 고정된 CID를 사용합니다.');
+      // 3. 이미지 파일이 선택되었는지 확인
+      if (!selectedImage) {
+        throw new Error('명함 이미지를 업로드해주세요.');
+      }
 
-      // 4. 스마트 계약에 CID 기록
+      // 4. 이미지를 Base64로 변환하고 로컬 스토리지에 저장 (Web2 방식)
+      toast.info('이미지를 처리하는 중...');
+      
+      // 이미지를 Base64로 변환
+      const imageBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedImage);
+      });
+
+      // CID 생성: 파일명 + 타임스탬프 + 간단한 해시
+      const timestamp = Date.now();
+      const fileName = selectedImage.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const cid = `bafy_${fileName}_${timestamp}_${Math.random().toString(36).substring(2, 15)}`;
+      
+      // 로컬 스토리지에 이미지 저장 (key: CID)
+      localStorage.setItem(`card_image_${cid}`, imageBase64);
+      console.log('이미지 로컬 저장 완료, CID:', cid);
+      toast.success('이미지 처리 완료!');
+
+      // 5. 스마트 계약에 CID 기록
       if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
         throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
       }
@@ -79,16 +136,17 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
       const tx = await contract.uploadCard(cid);
       toast.info('트랜잭션 전송 완료. 블록 확인 대기 중...');
 
-      // 5. 트랜잭션 확인 대기
+      // 6. 트랜잭션 확인 대기
       const receipt = await tx.wait();
       toast.success('명함이 성공적으로 생성되었습니다!');
 
-      // 6. BusinessCard에 블록체인 정보 추가
+      // 7. BusinessCard에 블록체인 정보 및 이미지 추가
       businessCard.cid = cid;
       businessCard.address = userAddress;
       businessCard.txHash = receipt.hash;
+      (businessCard as any).imageUrl = imageBase64; // 이미지 URL 추가
 
-      // 7. 완료 콜백 호출
+      // 8. 완료 콜백 호출
       onCardCreated(receipt.hash, userAddress, businessCard);
     } catch (error: any) {
       console.error('명함 생성 실패:', error);
@@ -98,7 +156,7 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
     }
   };
 
-  const isFormValid = formData.name && formData.tagline;
+  const isFormValid = formData.name && formData.tagline && selectedImage;
 
   return (
     <div className="min-h-screen bg-white">
@@ -143,6 +201,51 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Image Upload */}
+            <div className="space-y-4 p-6 border border-[#E6E8EB] rounded-lg">
+              <h3 className="text-[#111111]">Business Card Image *</h3>
+              <div className="space-y-2">
+                {!imagePreview ? (
+                  <div className="border-2 border-dashed border-[#E6E8EB] rounded-lg p-8 text-center">
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-[#1A1A1A]/40" />
+                    <Label htmlFor="image-upload" className="cursor-pointer">
+                      <span className="text-[#3366FF] hover:underline">
+                        Click to upload
+                      </span>
+                      {' '}or drag and drop
+                    </Label>
+                    <p className="text-sm text-[#1A1A1A]/60 mt-1">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-64 object-contain rounded-lg border border-[#E6E8EB]"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleImageRemove}
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Required Fields */}
             <div className="space-y-4 p-6 border border-[#E6E8EB] rounded-lg">
               <h3 className="text-[#111111]">Required Information</h3>

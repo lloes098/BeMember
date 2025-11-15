@@ -9,7 +9,7 @@ interface SuccessProps {
 }
 
 export default function Success({ txHash, onViewCard, onBack }: SuccessProps) {
-  const explorerUrl = `https://sepolia.basescan.org/tx/${txHash}`;
+  const explorerUrl = `https://testnet.monadexplorer.com/tx/${txHash}`;
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-6">
@@ -27,7 +27,7 @@ export default function Success({ txHash, onViewCard, onBack }: SuccessProps) {
             Card Created Successfully!
           </h1>
           <p className="text-[#1A1A1A]/80">
-            Your onchain identity card has been minted on Base Sepolia.
+            Your onchain identity card has been minted on Monad.
             You can now view and share your card.
           </p>
         </div>
@@ -44,7 +44,7 @@ export default function Success({ txHash, onViewCard, onBack }: SuccessProps) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-[#3366FF] hover:underline"
           >
-            View on BaseScan
+            View on Monad Explorer
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>

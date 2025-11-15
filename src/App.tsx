@@ -44,6 +44,7 @@ export default function App() {
 
   const navigateToCreate = () => {
     if (walletAddress) {
+      setScannedData(null); // 스캔 데이터 초기화 - 직접 생성할 때는 빈 폼
       setCurrentPage('create');
     }
   };

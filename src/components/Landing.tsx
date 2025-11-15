@@ -86,7 +86,7 @@ export default function Landing({
             Your Onchain Identity Card
           </h1>
           <p className="text-[#1A1A1A] max-w-2xl mx-auto">
-            Create a verifiable, permanent identity card on Base blockchain.
+            Create a verifiable, permanent identity card on Monad blockchain.
             Share your professional profile with a simple QR code.
           </p>
 
@@ -162,7 +162,7 @@ export default function Landing({
       {/* Footer */}
       <footer className="border-t border-[#E6E8EB] px-6 py-6">
         <div className="max-w-6xl mx-auto text-center text-sm text-[#1A1A1A]/60">
-          Powered by Base Sepolia
+          Powered by Monad
         </div>
       </footer>
     </div>

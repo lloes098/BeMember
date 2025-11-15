@@ -33,7 +33,7 @@ export default function FlowDiagram() {
               <FlowStep
                 number={3}
                 title="Mint Card"
-                description="Create onchain card on Base Sepolia"
+                description="Create onchain card on Monad"
                 icon={<CheckCircle2 className="w-6 h-6" />}
               />
               <Arrow />

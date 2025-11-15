@@ -35,13 +35,16 @@ export default function ScanCard({ onBack, onCardScanned }: ScanCardProps) {
     // Simulate OCR processing
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Mock extracted data
+    // Mock extracted data (실제 명함 정보)
     const mockData = {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      title: 'Software Engineer',
-      company: 'Tech Company Inc.',
+      name: '김기아',
+      email: 'madcomm@daum.net',
+      phone: '010-2282-8119',
+      title: '카마스터',
+      company: '기아 미소대리점',
+      address: '서울특별시 서초구 헌릉로 12(양재동)',
+      tel: '02-2773-1234',
+      fax: '02-2773-1235',
     };
 
     // BusinessCard 인스턴스 생성

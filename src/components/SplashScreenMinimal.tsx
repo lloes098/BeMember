@@ -108,7 +108,7 @@ export default function SplashScreenMinimal({ onComplete }: SplashScreenMinimalP
         transition={{ delay: 2 }}
         className="absolute bottom-8 text-sm text-[#1A1A1A]/40"
       >
-        Powered by Base
+        Powered by Monad
       </motion.div>
     </div>
   );

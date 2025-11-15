@@ -151,7 +151,7 @@ export default function SplashScreenCard({ onComplete }: SplashScreenCardProps) 
                 className="mt-auto text-center space-y-3"
               >
                 <p className="text-sm text-[#1A1A1A]/50">
-                  Powered by Base Sepolia
+                  Powered by Monad
                 </p>
                 
                 {/* Loading Indicator */}

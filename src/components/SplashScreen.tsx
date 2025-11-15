@@ -239,7 +239,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         className="absolute bottom-8 right-8 text-white/60 text-sm flex items-center gap-2"
       >
         <span>Powered by</span>
-        <span className="font-semibold text-white">Base</span>
+        <span className="font-semibold text-white">Monad</span>
       </motion.div>
     </div>
   );
