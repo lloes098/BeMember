@@ -18,7 +18,7 @@ module.exports = {
       url: process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 10143, // 0x279F - Monad 테스트넷 Chain ID
-      gasPrice: 1000000000, // 1 gwei (필요시 조정)
+      gasPrice: 10000000000, // 10 gwei (Monad 테스트넷 최소 요구사항)
     },
     // Monad 메인넷 (준비되면 사용)
     monadMainnet: {
@@ -32,7 +32,7 @@ module.exports = {
       url: process.env.MONAD_RPC_URL || process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 10143, // 0x279F - Monad 테스트넷 Chain ID
-      gasPrice: 1000000000,
+      gasPrice: 10000000000, // 10 gwei (Monad 테스트넷 최소 요구사항)
     },
     // 로컬 테스트용
     localhost: {
