@@ -29,14 +29,12 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
   // 스마트 계약에서 CID 조회하고 랜덤 명함 데이터 표시 (데모 버전)
   useEffect(() => {
     if (initialCardData) {
-      // 이미 데이터가 있으면 이미지 URL 확인
+      // 이미 데이터가 있으면 이미지 URL 확인 (IPFS Gateway 사용)
       if (initialCardData.cid && !initialCardData.imageUrl) {
-        const imageBase64 = localStorage.getItem(`card_image_${initialCardData.cid}`);
-        if (imageBase64) {
-          setCardData({ ...initialCardData, imageUrl: imageBase64 });
-        } else {
-          setCardData(initialCardData);
-        }
+        import('../services/ipfs').then(({ getIPFSGatewayURL }) => {
+          const imageUrl = getIPFSGatewayURL(initialCardData.cid);
+          setCardData({ ...initialCardData, imageUrl });
+        });
       } else {
         setCardData(initialCardData);
       }
@@ -95,23 +93,18 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
           toast.info(`CID 확인 완료: ${cid.slice(0, 10)}... (데모 모드: 랜덤 명함 정보 표시)`);
         }
 
-        // 4. 로컬 스토리지에서 이미지 가져오기 (Web2 방식)
-        const imageBase64 = localStorage.getItem(`card_image_${cid}`);
-        if (imageBase64) {
-          console.log('로컬 스토리지에서 이미지 찾음');
-        } else {
-          console.log('로컬 스토리지에 이미지 없음 (다른 브라우저/기기에서 업로드됨)');
-        }
+        // 4. 이미지는 IPFS에서 가져오거나 cardData에 포함됨 (localStorage 사용 안 함)
+        console.log('이미지는 IPFS CID를 통해 접근 가능:', cid);
 
         // 5. 랜덤 명함 데이터 생성
         const randomData = generateRandomCardData();
         const businessCard = BusinessCard.fromIPFSData(randomData);
         businessCard.cid = cid;
         businessCard.address = address;
-        // 이미지 데이터 추가
-        if (imageBase64) {
-          (businessCard as any).imageUrl = imageBase64;
-        }
+        // 이미지는 IPFS Gateway URL로 접근 (CID 기반)
+        // IPFS Gateway URL 생성
+        const { getIPFSGatewayURL } = await import('../services/ipfs');
+        (businessCard as any).imageUrl = getIPFSGatewayURL(cid);
         
         setCardData(businessCard);
       } catch (err: any) {

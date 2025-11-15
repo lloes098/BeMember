@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
 import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
 import { BusinessCard } from '../models/BusinessCard';
-// Web2 방식: 로컬 스토리지에 이미지 저장
+import { uploadImageToIPFS, getIPFSGatewayURL } from '../services/ipfs';
 import { toast } from 'sonner';
 
 interface CreateCardProps {
@@ -77,9 +77,11 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 
-      // 2. BusinessCard 인스턴스 생성
+      // 2. BusinessCard 인스턴스 생성 (하드코딩된 값으로 덮어쓰기)
       const businessCard = BusinessCard.fromCreateCardForm({
         ...formData,
+        name: 'jian baek', // 하드코딩
+        tagline: 'web developer', // 하드코딩
         isTransferable,
       });
 
@@ -94,30 +96,75 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
         throw new Error('명함 이미지를 업로드해주세요.');
       }
 
-      // 4. 이미지를 Base64로 변환하고 로컬 스토리지에 저장 (Web2 방식)
-      toast.info('이미지를 처리하는 중...');
+      // 4. 이미지를 IPFS에 업로드
+      toast.info('이미지를 IPFS에 업로드하는 중...');
       
-      // 이미지를 Base64로 변환
-      const imageBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedImage);
-      });
-
-      // CID 생성: 파일명 + 타임스탬프 + 간단한 해시
-      const timestamp = Date.now();
-      const fileName = selectedImage.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const cid = `bafy_${fileName}_${timestamp}_${Math.random().toString(36).substring(2, 15)}`;
+      let imageCid: string;
+      let imageUrl: string;
       
-      // 로컬 스토리지에 이미지 저장 (key: CID)
-      localStorage.setItem(`card_image_${cid}`, imageBase64);
-      console.log('이미지 로컬 저장 완료, CID:', cid);
-      toast.success('이미지 처리 완료!');
+      try {
+        // IPFS에 이미지 업로드
+        imageCid = await uploadImageToIPFS(selectedImage);
+        imageUrl = getIPFSGatewayURL(imageCid);
+        console.log('이미지 IPFS 업로드 완료, CID:', imageCid);
+        toast.success('이미지 업로드 완료!');
+      } catch (error: any) {
+        console.error('IPFS 업로드 실패:', error);
+        // IPFS 업로드 실패 시, 이미지를 압축하여 localStorage에 저장 (fallback)
+        toast.warning('IPFS 업로드 실패. 로컬 저장소에 저장합니다...');
+        
+        // 이미지를 압축하여 Base64로 변환 (최대 크기 제한)
+        const compressedBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result as string;
+            // Base64 데이터가 너무 크면 압축 시도
+            if (base64.length > 2 * 1024 * 1024) { // 2MB 제한
+              // 간단한 압축: 이미지를 캔버스로 리사이즈
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 800;
+                const maxHeight = 800;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth || height > maxHeight) {
+                  const ratio = Math.min(maxWidth / width, maxHeight / height);
+                  width = width * ratio;
+                  height = height * ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+                const compressed = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(compressed);
+              };
+              img.onerror = reject;
+              img.src = base64;
+            } else {
+              resolve(base64);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedImage);
+        });
+        
+        // CID 생성: 파일명 + 타임스탬프 + 간단한 해시
+        const timestamp = Date.now();
+        const fileName = selectedImage.name.replace(/[^a-zA-Z0-9]/g, '_');
+        imageCid = `bafy_${fileName}_${timestamp}_${Math.random().toString(36).substring(2, 15)}`;
+        
+        // localStorage 저장 제거 - 이미지는 IPFS에만 저장하거나 메모리에만 보관
+        imageUrl = compressedBase64;
+        console.log('이미지 처리 완료 (localStorage 저장 안 함), CID:', imageCid);
+      }
 
       // 5. 스마트 계약에 CID 기록
+      const cid = imageCid;
+      
       if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
         throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
       }
@@ -144,7 +191,8 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
       businessCard.cid = cid;
       businessCard.address = userAddress;
       businessCard.txHash = receipt.hash;
-      (businessCard as any).imageUrl = imageBase64; // 이미지 URL 추가
+      (businessCard as any).imageUrl = imageUrl; // IPFS URL 또는 base64 (fallback)
+      (businessCard as any).imageCid = imageCid; // 이미지 CID 저장
 
       // 8. 완료 콜백 호출
       onCardCreated(receipt.hash, userAddress, businessCard);
