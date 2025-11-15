@@ -40,19 +40,36 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
 
         // 1. 지갑 연결 (읽기 전용이므로 provider만 필요)
         const provider = await connectWallet();
+        const signer = await provider.getSigner();
+        const currentAddress = await signer.getAddress();
         
         if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
           throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
         }
 
-        // 2. 스마트 계약에서 CID 조회
+        // 2. 스마트 계약 인스턴스 생성
         const contract = new ethers.Contract(
           BUSINESS_CARD_CONTRACT_ADDRESS,
           BUSINESS_CARD_ABI,
           provider
         );
 
-        const cid = await contract.getCardCID(address);
+        // 3. 주소가 내 주소인지 확인하여 적절한 함수 사용
+        let cid: string;
+        if (address.toLowerCase() === currentAddress.toLowerCase()) {
+          // 내 명함 조회: myCardCID() 사용
+          console.log('내 명함 조회: myCardCID() 사용');
+          const contractWithSigner = new ethers.Contract(
+            BUSINESS_CARD_CONTRACT_ADDRESS,
+            BUSINESS_CARD_ABI,
+            signer
+          );
+          cid = await contractWithSigner.myCardCID();
+        } else {
+          // 다른 주소의 명함 조회: getCardCID(address) 사용
+          console.log('다른 주소 명함 조회: getCardCID() 사용');
+          cid = await contract.getCardCID(address);
+        }
         
         if (!cid || cid === '') {
           throw new Error('이 주소에는 등록된 명함이 없습니다.');

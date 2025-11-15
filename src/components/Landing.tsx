@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wallet, QrCode, Share2, CheckCircle2, Library } from 'lucide-react';
+import { Wallet, QrCode, Share2, CheckCircle2, Library, TestTube } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 
@@ -10,6 +10,7 @@ interface LandingProps {
   onCreateCard: () => void;
   onScanCard: () => void;
   onViewCollection: () => void;
+  onTestCID: () => void;
   collectionCount: number;
 }
 
@@ -20,6 +21,7 @@ export default function Landing({
   onCreateCard,
   onScanCard,
   onViewCollection,
+  onTestCID,
   collectionCount,
 }: LandingProps) {
   const formatAddress = (address: string) => {
@@ -104,6 +106,16 @@ export default function Landing({
               <QrCode className="w-4 h-4 mr-2" />
               Scan Card
             </Button>
+            {walletAddress && (
+              <Button
+                onClick={onTestCID}
+                variant="outline"
+                className="px-6 py-6 border-orange-300 text-orange-600 hover:bg-orange-50"
+              >
+                <TestTube className="w-4 h-4 mr-2" />
+                Test CID
+              </Button>
+            )}
           </div>
 
           {!walletAddress && (
