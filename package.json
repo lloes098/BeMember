@@ -52,12 +52,18 @@
           "vaul": "^1.1.2"
       },
       "devDependencies": {
+          "@nomicfoundation/hardhat-toolbox": "^5.0.0",
           "@types/node": "^20.10.0",
           "@vitejs/plugin-react-swc": "^3.10.2",
+          "dotenv": "^16.4.5",
+          "hardhat": "^2.22.0",
           "vite": "^5.4.11"
       },
       "scripts": {
           "dev": "vite",
-          "build": "vite build"
+          "build": "vite build",
+          "compile": "hardhat compile",
+          "deploy:monad": "hardhat run scripts/deploy.js --network monad",
+          "deploy:local": "hardhat run scripts/deploy.js --network localhost"
       }
   }
