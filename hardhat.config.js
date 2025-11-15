@@ -4,7 +4,7 @@ require("dotenv").config();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.20",
+    version: "0.8.25",
     settings: {
       optimizer: {
         enabled: true,
@@ -17,7 +17,7 @@ module.exports = {
     monadTestnet: {
       url: process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 420, // 0x1a4 - Monad 테스트넷
+      chainId: 10143, // 0x279F - Monad 테스트넷 Chain ID
       gasPrice: 1000000000, // 1 gwei (필요시 조정)
     },
     // Monad 메인넷 (준비되면 사용)
@@ -31,7 +31,7 @@ module.exports = {
     monad: {
       url: process.env.MONAD_RPC_URL || process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 420, // 0x1a4
+      chainId: 10143, // 0x279F - Monad 테스트넷 Chain ID
       gasPrice: 1000000000,
     },
     // 로컬 테스트용
@@ -53,6 +53,16 @@ module.exports = {
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",
+  },
+  // Sourcify 검증 설정
+  sourcify: {
+    enabled: true,
+    apiUrl: "https://sourcify-api-monad.blockvision.org/",
+    browserUrl: "https://testnet.monadexplorer.com/",
+  },
+  // Etherscan 검증 비활성화 (Sourcify 사용)
+  etherscan: {
+    enabled: false,
   },
 };
 

@@ -104,13 +104,34 @@ VITE_CONTRACT_ADDRESS=0x배포된_주소
 npm run dev
 ```
 
-## 🔍 컨트랙트 검증
+## 🔍 컨트랙트 검증 (Sourcify)
 
-배포 후 블록 익스플로러에서 컨트랙트를 검증할 수 있습니다:
+Monad 테스트넷은 Sourcify를 사용하여 컨트랙트를 검증합니다.
 
-```bash
-npx hardhat verify --network monad <컨트랙트_주소>
-```
+### 수동 검증 방법
+
+1. **Monad Explorer 접속**
+   - https://testnet.monadexplorer.com/ 접속
+   - 배포된 컨트랙트 주소 검색
+
+2. **컨트랙트 소스 코드 업로드**
+   - "Verify Contract" 버튼 클릭
+   - `contracts/BusinessCard.sol` 파일 업로드
+   - 또는 컴파일된 메타데이터 사용
+
+3. **검증 확인**
+   - 검증 성공 시 컨트랙트 소스 코드가 공개됩니다
+
+### Sourcify API 정보
+
+- **API URL**: https://sourcify-api-monad.blockvision.org/
+- **Browser URL**: https://testnet.monadexplorer.com/
+
+### Monad 테스트넷 정보
+
+- **RPC URL**: https://testnet-rpc.monad.xyz
+- **Chain ID**: 10143 (0x279F)
+- **Faucet**: https://testnet.monad.xyz (테스트넷 토큰 받기)
 
 ## 📊 컨트랙트 정보
 

@@ -3,15 +3,15 @@ import { ethers } from 'ethers';
 // Monad 체인 네트워크 설정
 // TODO: 실제 Monad 체인 RPC URL로 변경 필요
 export const MONAD_CHAIN_CONFIG = {
-  chainId: 0x1a4, // Monad 테스트넷 (실제 체인 ID 확인 필요)
+  chainId: 10143, // 0x279F - Monad 테스트넷 Chain ID
   chainName: 'Monad Testnet',
   nativeCurrency: {
     name: 'MON',
     symbol: 'MON',
     decimals: 18,
   },
-  rpcUrls: ['https://testnet-rpc.monad.xyz'], // 실제 RPC URL로 변경 필요
-  blockExplorerUrls: ['https://testnet-explorer.monad.xyz'], // 실제 Explorer URL로 변경 필요
+  rpcUrls: ['https://testnet-rpc.monad.xyz'],
+  blockExplorerUrls: ['https://testnet.monadexplorer.com/'],
 };
 
 // 스마트 계약 주소 (배포 후 업데이트 필요)

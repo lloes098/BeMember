@@ -22,20 +22,13 @@ async function main() {
   console.log("\n📋 다음 정보를 .env 파일에 추가하세요:");
   console.log(`VITE_CONTRACT_ADDRESS=${address}`);
 
-  // 컨트랙트 검증 (선택사항 - 블록 익스플로러가 있는 경우)
-  if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-    console.log("\n⏳ 컨트랙트 검증을 위해 잠시 대기 중...");
-    await new Promise((resolve) => setTimeout(resolve, 30000)); // 30초 대기
-
-    try {
-      await hre.run("verify:verify", {
-        address: address,
-        constructorArguments: [],
-      });
-      console.log("✅ 컨트랙트 검증 완료!");
-    } catch (error) {
-      console.log("⚠️  컨트랙트 검증 실패 (무시 가능):", error.message);
-    }
+  // Sourcify 검증 안내 (Monad 테스트넷)
+  if (hre.network.name === "monad" || hre.network.name === "monadTestnet") {
+    console.log("\n📝 Sourcify 검증 안내:");
+    console.log("🔗 수동 검증: https://testnet.monadexplorer.com/");
+    console.log("📍 컨트랙트 주소:", address);
+    console.log("💡 Sourcify API: https://sourcify-api-monad.blockvision.org/");
+    console.log("\n⚠️  자동 검증은 수동으로 진행해주세요.");
   }
 
   return address;
