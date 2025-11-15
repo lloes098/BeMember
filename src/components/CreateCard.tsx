@@ -5,6 +5,11 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
+import { ethers } from 'ethers';
+import { uploadCardToIPFS } from '../services/ipfs';
+import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
+import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
+import { toast } from 'sonner';
 
 interface CreateCardProps {
   walletAddress: string;
@@ -36,18 +41,62 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
     e.preventDefault();
     setIsCreating(true);
 
-    // Simulate blockchain transaction
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // 1. 지갑 연결 확인
+      const provider = await connectWallet();
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
 
-    const mockTxHash = '0x' + Math.random().toString(16).substring(2, 66);
-    
-    onCardCreated(mockTxHash, walletAddress, {
-      ...formData,
-      isTransferable,
-      createdAt: new Date().toISOString(),
-    });
+      // 2. 명함 데이터 준비
+      const cardData = {
+        name: formData.name,
+        tagline: formData.tagline,
+        role: formData.role,
+        organization: formData.organization,
+        website: formData.website,
+        ens: formData.ens,
+        farcaster: formData.farcaster,
+        twitter: formData.twitter,
+        github: formData.github,
+        isTransferable,
+        createdAt: new Date().toISOString(),
+      };
 
-    setIsCreating(false);
+      // 3. IPFS에 명함 데이터 업로드
+      toast.info('IPFS에 명함 데이터를 업로드하는 중...');
+      const cid = await uploadCardToIPFS(cardData);
+      toast.success(`IPFS 업로드 완료! CID: ${cid.slice(0, 10)}...`);
+
+      // 4. 스마트 계약에 CID 기록
+      if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
+        throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
+      }
+
+      const contract = new ethers.Contract(
+        BUSINESS_CARD_CONTRACT_ADDRESS,
+        BUSINESS_CARD_ABI,
+        signer
+      );
+
+      toast.info('스마트 계약에 트랜잭션을 전송하는 중...');
+      const tx = await contract.uploadCard(cid);
+      toast.info('트랜잭션 전송 완료. 블록 확인 대기 중...');
+
+      // 5. 트랜잭션 확인 대기
+      const receipt = await tx.wait();
+      toast.success('명함이 성공적으로 생성되었습니다!');
+
+      // 6. 완료 콜백 호출
+      onCardCreated(receipt.hash, userAddress, {
+        ...cardData,
+        cid, // CID도 함께 전달
+      });
+    } catch (error: any) {
+      console.error('명함 생성 실패:', error);
+      toast.error(error.message || '명함 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const isFormValid = formData.name && formData.tagline;
@@ -74,8 +123,8 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
             <h1 className="text-[#111111]">Create Your Onchain Card</h1>
             <p className="text-[#1A1A1A]/80 mt-2">
               {scannedData 
-                ? 'Review and edit the information from the scanned card, then mint your identity on Base Sepolia'
-                : 'Fill in your information to mint your identity card on Base Sepolia'
+                ? 'Review and edit the information from the scanned card, then mint your identity on Monad Chain'
+                : 'Fill in your information to mint your identity card on Monad Chain'
               }
             </p>
           </div>

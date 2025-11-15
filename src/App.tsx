@@ -23,11 +23,19 @@ export default function App() {
   const [scannedData, setScannedData] = useState<any>(null);
   const [collection, setCollection] = useState<any[]>([]);
 
-  // Mock wallet connection
+  // 실제 지갑 연결
   const connectWallet = async () => {
-    // Simulate wallet connection
-    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42);
-    setWalletAddress(mockAddress);
+    try {
+      const { connectWallet: connect } = await import('./services/web3');
+      const provider = await connect();
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      setWalletAddress(address);
+      toast.success('지갑이 연결되었습니다!');
+    } catch (error: any) {
+      console.error('지갑 연결 실패:', error);
+      toast.error(error.message || '지갑 연결에 실패했습니다.');
+    }
   };
 
   const disconnectWallet = () => {

@@ -1,21 +1,76 @@
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, QrCode, Share2, Download, CheckCircle2, Globe, Github } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, QrCode, Share2, Download, CheckCircle2, Globe, Github, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import QRCode from 'qrcode';
+import { ethers } from 'ethers';
+import { getCardFromIPFS } from '../services/ipfs';
+import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
+import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
+import { toast } from 'sonner';
 
 interface CardViewProps {
   address: string;
-  cardData: any;
+  cardData?: any; // 선택적 - 없으면 스마트 계약에서 조회
   onBack: () => void;
 }
 
-export default function CardView({ address, cardData, onBack }: CardViewProps) {
+export default function CardView({ address, cardData: initialCardData, onBack }: CardViewProps) {
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
+  const [cardData, setCardData] = useState<any>(initialCardData);
+  const [isLoading, setIsLoading] = useState(!initialCardData);
+  const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const cardUrl = `https://bemember.app/card/${address}`;
+
+  // 스마트 계약에서 CID 조회하고 IPFS에서 데이터 가져오기
+  useEffect(() => {
+    if (initialCardData) {
+      // 이미 데이터가 있으면 스킵
+      return;
+    }
+
+    const fetchCardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // 1. 지갑 연결 (읽기 전용이므로 provider만 필요)
+        const provider = await connectWallet();
+        
+        if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
+          throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
+        }
+
+        // 2. 스마트 계약에서 CID 조회
+        const contract = new ethers.Contract(
+          BUSINESS_CARD_CONTRACT_ADDRESS,
+          BUSINESS_CARD_ABI,
+          provider
+        );
+
+        const cid = await contract.getCardCID(address);
+        
+        if (!cid || cid === '') {
+          throw new Error('이 주소에는 등록된 명함이 없습니다.');
+        }
+
+        // 3. IPFS에서 명함 데이터 가져오기
+        const data = await getCardFromIPFS(cid);
+        setCardData({ ...data, cid });
+      } catch (err: any) {
+        console.error('명함 데이터 조회 실패:', err);
+        setError(err.message || '명함 데이터를 불러올 수 없습니다.');
+        toast.error(err.message || '명함 데이터를 불러올 수 없습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCardData();
+  }, [address, initialCardData]);
 
   const generateQR = async () => {
     try {
@@ -77,9 +132,23 @@ export default function CardView({ address, cardData, onBack }: CardViewProps) {
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-6 py-12">
-        <div className="space-y-8">
-          {/* Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3366FF] to-[#2952CC] p-8 text-white shadow-xl">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-[#3366FF]" />
+            <p className="text-[#1A1A1A]/60">명함 데이터를 불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 space-y-4">
+            <p className="text-red-500">{error}</p>
+            <Button onClick={onBack} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              돌아가기
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Card */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3366FF] to-[#2952CC] p-8 text-white shadow-xl">
             <div className="space-y-6">
               {/* Header */}
               <div className="flex items-start justify-between">
@@ -159,7 +228,7 @@ export default function CardView({ address, cardData, onBack }: CardViewProps) {
               {/* Footer */}
               <div className="pt-4 border-t border-white/20">
                 <div className="flex items-center justify-between text-sm text-white/70">
-                  <span>Base Sepolia</span>
+                  <span>Monad Chain</span>
                   <span>{address.slice(0, 6)}...{address.slice(-4)}</span>
                 </div>
               </div>
@@ -195,8 +264,14 @@ export default function CardView({ address, cardData, onBack }: CardViewProps) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-[#1A1A1A]/60">Network</span>
-                <span className="text-[#1A1A1A]">Base Sepolia</span>
+                <span className="text-[#1A1A1A]">Monad Chain</span>
               </div>
+              {cardData?.cid && (
+                <div className="flex justify-between">
+                  <span className="text-[#1A1A1A]/60">IPFS CID</span>
+                  <span className="text-[#1A1A1A] font-mono text-xs">{cardData.cid.slice(0, 20)}...</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#1A1A1A]/60">Token Type</span>
                 <span className="text-[#1A1A1A]">
@@ -217,7 +292,8 @@ export default function CardView({ address, cardData, onBack }: CardViewProps) {
               )}
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </main>
 
       <canvas ref={canvasRef} className="hidden" />
