@@ -9,6 +9,7 @@ import { ethers } from 'ethers';
 import { uploadCardToIPFS } from '../services/ipfs';
 import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
 import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
+import { BusinessCard } from '../models/BusinessCard';
 import { toast } from 'sonner';
 
 interface CreateCardProps {
@@ -21,17 +22,13 @@ interface CreateCardProps {
 export default function CreateCard({ walletAddress, onCardCreated, onBack, scannedData }: CreateCardProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [isTransferable, setIsTransferable] = useState(false);
-  const [formData, setFormData] = useState({
-    name: scannedData?.name || '',
-    tagline: scannedData?.title ? `${scannedData.title} at ${scannedData.company || ''}` : '',
-    role: scannedData?.title || '',
-    organization: scannedData?.company || '',
-    ens: '',
-    farcaster: '',
-    twitter: '',
-    website: scannedData?.website || '',
-    github: '',
-  });
+  
+  // 스캔된 데이터가 있으면 BusinessCard 인스턴스 생성
+  const initialCard = scannedData 
+    ? BusinessCard.fromScannedData(scannedData)
+    : new BusinessCard();
+  
+  const [formData, setFormData] = useState(initialCard.toCreateCardForm());
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
@@ -47,24 +44,21 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 
-      // 2. 명함 데이터 준비
-      const cardData = {
-        name: formData.name,
-        tagline: formData.tagline,
-        role: formData.role,
-        organization: formData.organization,
-        website: formData.website,
-        ens: formData.ens,
-        farcaster: formData.farcaster,
-        twitter: formData.twitter,
-        github: formData.github,
+      // 2. BusinessCard 인스턴스 생성
+      const businessCard = BusinessCard.fromCreateCardForm({
+        ...formData,
         isTransferable,
-        createdAt: new Date().toISOString(),
-      };
+      });
+
+      // 유효성 검사
+      if (!businessCard.isValid()) {
+        const missing = businessCard.getMissingFields();
+        throw new Error(`필수 필드를 입력해주세요: ${missing.join(', ')}`);
+      }
 
       // 3. IPFS에 명함 데이터 업로드
       toast.info('IPFS에 명함 데이터를 업로드하는 중...');
-      const cid = await uploadCardToIPFS(cardData);
+      const cid = await uploadCardToIPFS(businessCard.toIPFSData());
       toast.success(`IPFS 업로드 완료! CID: ${cid.slice(0, 10)}...`);
 
       // 4. 스마트 계약에 CID 기록
@@ -86,11 +80,13 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
       const receipt = await tx.wait();
       toast.success('명함이 성공적으로 생성되었습니다!');
 
-      // 6. 완료 콜백 호출
-      onCardCreated(receipt.hash, userAddress, {
-        ...cardData,
-        cid, // CID도 함께 전달
-      });
+      // 6. BusinessCard에 블록체인 정보 추가
+      businessCard.cid = cid;
+      businessCard.address = userAddress;
+      businessCard.txHash = receipt.hash;
+
+      // 7. 완료 콜백 호출
+      onCardCreated(receipt.hash, userAddress, businessCard);
     } catch (error: any) {
       console.error('명함 생성 실패:', error);
       toast.error(error.message || '명함 생성에 실패했습니다. 다시 시도해주세요.');

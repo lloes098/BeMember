@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ArrowLeft, Camera, Upload, Download, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { BusinessCard } from '../models/BusinessCard';
 import { toast } from 'sonner';
 
 interface ScanCardProps {
@@ -12,7 +13,7 @@ interface ScanCardProps {
 export default function ScanCard({ onBack, onCardScanned }: ScanCardProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [businessCard, setBusinessCard] = useState<BusinessCard | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,27 +44,21 @@ export default function ScanCard({ onBack, onCardScanned }: ScanCardProps) {
       company: 'Tech Company Inc.',
     };
 
-    setExtractedData(mockData);
+    // BusinessCard 인스턴스 생성
+    const card = BusinessCard.fromScannedData(mockData);
+    setBusinessCard(card);
     setIsProcessing(false);
   };
 
   const downloadVCard = () => {
-    if (!extractedData) return;
+    if (!businessCard) return;
 
-    const vcard = `BEGIN:VCARD
-VERSION:3.0
-FN:${extractedData.name}
-EMAIL:${extractedData.email}
-TEL:${extractedData.phone}
-TITLE:${extractedData.title}
-ORG:${extractedData.company}
-END:VCARD`;
-
+    const vcard = businessCard.toVCard();
     const blob = new Blob([vcard], { type: 'text/vcard' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${extractedData.name.replace(/\s+/g, '_')}.vcf`;
+    link.download = `${businessCard.name.replace(/\s+/g, '_')}.vcf`;
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -76,12 +71,20 @@ END:VCARD`;
   };
 
   const addToBeMember = () => {
-    if (extractedData) {
+    if (businessCard) {
       toast.success('Contact added to BeMember!', {
         description: 'Card saved to your collection. Redirecting to create onchain card...',
       });
       setTimeout(() => {
-        onCardScanned(extractedData);
+        // BusinessCard를 원본 스캔 데이터 형식으로 변환하여 전달
+        onCardScanned({
+          name: businessCard.name,
+          email: businessCard.email,
+          phone: businessCard.phone,
+          title: businessCard.title || businessCard.role,
+          company: businessCard.company || businessCard.organization,
+          website: businessCard.website,
+        });
       }, 1000);
     }
   };
@@ -171,7 +174,7 @@ END:VCARD`;
           )}
 
           {/* Extracted Data */}
-          {extractedData && (
+          {businessCard && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-[#111111]">
@@ -188,28 +191,32 @@ END:VCARD`;
               <div className="p-6 border border-[#E6E8EB] rounded-lg space-y-4">
                 <div className="space-y-2">
                   <div className="text-sm text-[#1A1A1A]/60">Name</div>
-                  <div className="text-[#1A1A1A]">{extractedData.name}</div>
+                  <div className="text-[#1A1A1A]">{businessCard.name}</div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="text-sm text-[#1A1A1A]/60">Title</div>
-                  <div className="text-[#1A1A1A]">{extractedData.title}</div>
+                  <div className="text-[#1A1A1A]">{businessCard.title || businessCard.role}</div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="text-sm text-[#1A1A1A]/60">Company</div>
-                  <div className="text-[#1A1A1A]">{extractedData.company}</div>
+                  <div className="text-[#1A1A1A]">{businessCard.company || businessCard.organization}</div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-sm text-[#1A1A1A]/60">Email</div>
-                  <div className="text-[#1A1A1A]">{extractedData.email}</div>
-                </div>
+                {businessCard.email && (
+                  <div className="space-y-2">
+                    <div className="text-sm text-[#1A1A1A]/60">Email</div>
+                    <div className="text-[#1A1A1A]">{businessCard.email}</div>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <div className="text-sm text-[#1A1A1A]/60">Phone</div>
-                  <div className="text-[#1A1A1A]">{extractedData.phone}</div>
-                </div>
+                {businessCard.phone && (
+                  <div className="space-y-2">
+                    <div className="text-sm text-[#1A1A1A]/60">Phone</div>
+                    <div className="text-[#1A1A1A]">{businessCard.phone}</div>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -246,7 +253,7 @@ END:VCARD`;
                   variant="ghost"
                   onClick={() => {
                     setCapturedImage(null);
-                    setExtractedData(null);
+                    setBusinessCard(null);
                     setIsSaved(false);
                   }}
                 >
