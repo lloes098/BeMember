@@ -27,21 +27,49 @@ export async function connectWallet(): Promise<ethers.BrowserProvider> {
 
   const provider = new ethers.BrowserProvider(window.ethereum);
   
-  // Monad 체인으로 네트워크 전환 시도
-  try {
-    await window.ethereum.request({
-      method: 'wallet_addEthereumChain',
-      params: [MONAD_CHAIN_CONFIG],
-    });
-  } catch (error: any) {
-    // 이미 추가되어 있거나 사용자가 거부한 경우 무시
-    if (error.code !== 4902 && error.code !== -32002) {
-      console.warn('네트워크 추가 실패:', error);
-    }
-  }
-
-  // 계정 연결 요청
+  // 계정 연결 요청 (먼저 연결)
   await provider.send('eth_requestAccounts', []);
+  
+  // 현재 체인 ID 확인
+  const network = await provider.getNetwork();
+  const currentChainId = Number(network.chainId);
+  const monadChainId = MONAD_CHAIN_CONFIG.chainId;
+  
+  // Monad 테스트넷이 아니면 전환 요청
+  if (currentChainId !== monadChainId) {
+    try {
+      // 먼저 네트워크 전환 시도
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${monadChainId.toString(16)}` }],
+      });
+    } catch (switchError: any) {
+      // 네트워크가 추가되지 않은 경우 추가
+      if (switchError.code === 4902 || switchError.code === -32002) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [MONAD_CHAIN_CONFIG],
+          });
+        } catch (addError: any) {
+          throw new Error(
+            `Monad 테스트넷으로 전환할 수 없습니다. MetaMask에서 수동으로 전환해주세요.\n` +
+            `Chain ID: ${monadChainId} (0x${monadChainId.toString(16)})\n` +
+            `RPC URL: ${MONAD_CHAIN_CONFIG.rpcUrls[0]}`
+          );
+        }
+      } else {
+        throw new Error(
+          `Monad 테스트넷으로 전환할 수 없습니다. MetaMask에서 수동으로 전환해주세요.\n` +
+          `현재 네트워크: Chain ID ${currentChainId}\n` +
+          `필요한 네트워크: Chain ID ${monadChainId} (Monad Testnet)`
+        );
+      }
+    }
+    
+    // 전환 후 다시 provider 생성
+    return new ethers.BrowserProvider(window.ethereum);
+  }
   
   return provider;
 }

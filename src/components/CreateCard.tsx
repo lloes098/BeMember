@@ -6,10 +6,10 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ethers } from 'ethers';
-import { uploadCardToIPFS } from '../services/ipfs';
 import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
 import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
 import { BusinessCard } from '../models/BusinessCard';
+import { DEMO_CID } from '../constants/demo';
 import { toast } from 'sonner';
 
 interface CreateCardProps {
@@ -56,15 +56,18 @@ export default function CreateCard({ walletAddress, onCardCreated, onBack, scann
         throw new Error(`필수 필드를 입력해주세요: ${missing.join(', ')}`);
       }
 
-      // 3. IPFS에 명함 데이터 업로드
-      toast.info('IPFS에 명함 데이터를 업로드하는 중...');
-      const cid = await uploadCardToIPFS(businessCard.toIPFSData());
-      toast.success(`IPFS 업로드 완료! CID: ${cid.slice(0, 10)}...`);
+      // 3. 데모 버전: 고정된 CID 사용 (IPFS 업로드 생략)
+      const cid = DEMO_CID;
+      toast.info('데모 모드: 고정된 CID를 사용합니다.');
 
       // 4. 스마트 계약에 CID 기록
       if (!BUSINESS_CARD_CONTRACT_ADDRESS) {
         throw new Error('스마트 계약 주소가 설정되지 않았습니다.');
       }
+
+      console.log('BUSINESS_CARD_CONTRACT_ADDRESS:', BUSINESS_CARD_CONTRACT_ADDRESS);
+      console.log('BUSINESS_CARD_ABI:', BUSINESS_CARD_ABI);
+      console.log('cid:', cid);
 
       const contract = new ethers.Contract(
         BUSINESS_CARD_CONTRACT_ADDRESS,

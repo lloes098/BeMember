@@ -4,9 +4,10 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import QRCode from 'qrcode';
 import { ethers } from 'ethers';
-import { getCardFromIPFS } from '../services/ipfs';
 import { connectWallet, BUSINESS_CARD_CONTRACT_ADDRESS } from '../services/web3';
 import { BUSINESS_CARD_ABI } from '../contracts/BusinessCard';
+import { generateRandomCardData, DEMO_CID } from '../constants/demo';
+import { BusinessCard } from '../models/BusinessCard';
 import { toast } from 'sonner';
 
 interface CardViewProps {
@@ -25,7 +26,7 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
 
   const cardUrl = `https://bemember.app/card/${address}`;
 
-  // 스마트 계약에서 CID 조회하고 IPFS에서 데이터 가져오기
+  // 스마트 계약에서 CID 조회하고 랜덤 명함 데이터 표시 (데모 버전)
   useEffect(() => {
     if (initialCardData) {
       // 이미 데이터가 있으면 스킵
@@ -57,9 +58,23 @@ export default function CardView({ address, cardData: initialCardData, onBack }:
           throw new Error('이 주소에는 등록된 명함이 없습니다.');
         }
 
-        // 3. IPFS에서 명함 데이터 가져오기
-        const data = await getCardFromIPFS(cid);
-        setCardData({ ...data, cid });
+        // 3. 데모 버전: CID 확인 후 랜덤 명함 데이터 생성
+        console.log('조회된 CID:', cid);
+        console.log('예상 CID:', DEMO_CID);
+        
+        if (cid === DEMO_CID) {
+          toast.success('CID 확인 완료! 데모 모드: 랜덤 명함 정보를 표시합니다.');
+        } else {
+          toast.info(`CID 확인 완료: ${cid.slice(0, 10)}... (데모 모드: 랜덤 명함 정보 표시)`);
+        }
+
+        // 4. 랜덤 명함 데이터 생성
+        const randomData = generateRandomCardData();
+        const businessCard = BusinessCard.fromIPFSData(randomData);
+        businessCard.cid = cid;
+        businessCard.address = address;
+        
+        setCardData(businessCard);
       } catch (err: any) {
         console.error('명함 데이터 조회 실패:', err);
         setError(err.message || '명함 데이터를 불러올 수 없습니다.');
