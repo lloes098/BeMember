@@ -162,24 +162,26 @@ END:VCARD`;
             ) : viewMode === 'grid' ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCollection.map((card, index) => (
+                  // @ts-ignore - key is a special React prop, not part of component props
                   <CardGridItem
                     key={index}
                     card={card}
                     onCreateCard={() => onCreateFromCard(card)}
                     onDownload={() => downloadVCard(card)}
-                    onDelete={() => setDeleteIndex(collection.indexOf(card))}
+                    onDelete={() => { setDeleteIndex(collection.indexOf(card)); }}
                   />
                 ))}
               </div>
             ) : (
               <div className="space-y-4">
                 {filteredCollection.map((card, index) => (
+                  // @ts-ignore - key is a special React prop, not part of component props
                   <CardListItem
                     key={index}
                     card={card}
                     onCreateCard={() => onCreateFromCard(card)}
                     onDownload={() => downloadVCard(card)}
-                    onDelete={() => setDeleteIndex(collection.indexOf(card))}
+                    onDelete={() => { setDeleteIndex(collection.indexOf(card)); }}
                   />
                 ))}
               </div>
@@ -212,17 +214,19 @@ END:VCARD`;
   );
 }
 
-function CardGridItem({
-  card,
-  onCreateCard,
-  onDownload,
-  onDelete,
-}: {
+interface CardGridItemProps {
   card: any;
   onCreateCard: () => void;
   onDownload: () => void;
   onDelete: () => void;
-}) {
+}
+
+const CardGridItem: React.FC<CardGridItemProps> = ({
+  card,
+  onCreateCard,
+  onDownload,
+  onDelete,
+}) => {
   return (
     <div className="border border-[#E6E8EB] rounded-lg p-6 space-y-4 hover:border-[#3366FF]/30 transition-colors">
       <div className="space-y-3">
@@ -271,19 +275,21 @@ function CardGridItem({
       </div>
     </div>
   );
-}
+};
 
-function CardListItem({
-  card,
-  onCreateCard,
-  onDownload,
-  onDelete,
-}: {
+interface CardListItemProps {
   card: any;
   onCreateCard: () => void;
   onDownload: () => void;
   onDelete: () => void;
-}) {
+}
+
+const CardListItem: React.FC<CardListItemProps> = ({
+  card,
+  onCreateCard,
+  onDownload,
+  onDelete,
+}) => {
   return (
     <div className="border border-[#E6E8EB] rounded-lg p-6 hover:border-[#3366FF]/30 transition-colors">
       <div className="flex items-center justify-between gap-6">
