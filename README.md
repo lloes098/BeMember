@@ -1,7 +1,7 @@
 
-  # BeMember Prototype Overview
+  # BeMember
 
-  This is a code bundle for BeMember Prototype Overview. The original project is available at https://www.figma.com/design/k7qzsHSO7DfGPWkoLW1z94/BeMember-Prototype-Overview.
+  Onchain identity card on Monad blockchain.
 
   ## Running the code
 
