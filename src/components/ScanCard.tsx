@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowLeft, Camera, Upload, Download, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface ScanCardProps {
   onBack: () => void;

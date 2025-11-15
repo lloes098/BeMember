@@ -1,3 +1,4 @@
+import React from 'react';
 import { Library, Camera, Plus, Download, Share2, CheckCircle2 } from 'lucide-react';
 
 export default function CollectionGuide() {

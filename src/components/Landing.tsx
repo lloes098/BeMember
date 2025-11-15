@@ -1,3 +1,4 @@
+import React from 'react';
 import { Wallet, QrCode, Share2, CheckCircle2, Library } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';

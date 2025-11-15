@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle2, Zap, Shield, Globe } from 'lucide-react';
 

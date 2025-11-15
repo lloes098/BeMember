@@ -1,3 +1,4 @@
+import React from 'react';
 import { CheckCircle2, ExternalLink, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 

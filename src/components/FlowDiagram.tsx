@@ -1,3 +1,4 @@
+import React from 'react';
 import { Camera, CheckCircle2, Share2, Download, ArrowRight } from 'lucide-react';
 
 export default function FlowDiagram() {

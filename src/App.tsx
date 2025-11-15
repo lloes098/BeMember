@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 // Splash Screen Variants - Choose one:
 import SplashScreen from './components/SplashScreen'; // Gradient with floating elements
 // import SplashScreen from './components/SplashScreenMinimal'; // Clean minimal design
@@ -11,7 +11,7 @@ import Success from './components/Success';
 import ScanCard from './components/ScanCard';
 import MyCollection from './components/MyCollection';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);

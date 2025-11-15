@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowLeft, QrCode, Share2, Download, CheckCircle2, Globe, Github } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
